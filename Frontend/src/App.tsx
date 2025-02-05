@@ -1,13 +1,13 @@
+import { Home } from "./components/DrawingCanvas/Home"
 
-import { DrawingCanvas } from './components/DrawingCanvas/DrawingCanvas'
+
 
 function App() {
   
 
   return (
     <>
-    <DrawingCanvas></DrawingCanvas>
-      
+    <Home></Home>
     </>
   )
 }

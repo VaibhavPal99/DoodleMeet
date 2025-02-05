@@ -1,47 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import "./DrawingCanvas.css";
 
-export const DrawingCanvas = () => {
+interface DrawingCanvasProps {
+    socket: WebSocket;
+}
+
+export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [socket, setSocket] = useState<WebSocket | null>(null);
 
-    // Initialize WebSocket connection
-    useEffect(() => {
-        const ws = new WebSocket("ws://localhost:8080"); // Replace with your WebSocket server URL
-
-        ws.onopen = () => {
-            console.log("WebSocket connection established");
-            setSocket(ws);
-        };
-
-        ws.onmessage = async (event) => {
-            try {
-                let textData;
-                if (event.data instanceof Blob) {
-                    textData = await event.data.text();
-                } else {
-                    textData = event.data;
-                }
-
-                const data = JSON.parse(textData);
-                updateCanvas(data);
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
-
-        return () => {
-            ws.close(); // Cleanup WebSocket connection on unmount
-        };
-    }, []);
-
-    // Initialize canvas
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -58,10 +26,29 @@ export const DrawingCanvas = () => {
         }
     }, []);
 
-    // Update canvas with received data
+    useEffect(() => {
+        socket.onmessage = async (event) => {
+            try {
+                let textData;
+                if (event.data instanceof Blob) {
+                    textData = await event.data.text();
+                } else {
+                    textData = event.data;
+                }
+
+                const data = JSON.parse(textData);
+                updateCanvas(data);
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+    }, [socket]);
+
     const updateCanvas = (data: any) => {
         const ctx = ctxRef.current;
         if (!ctx) return;
+
+        ctx.globalCompositeOperation = data.erase ? "destination-out" : "source-over";
 
         switch (data.type) {
             case "start":
@@ -82,7 +69,6 @@ export const DrawingCanvas = () => {
         }
     };
 
-    // Handle drawing start
     const handleStartDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!ctxRef.current) return;
         setIsDrawing(true);
@@ -91,19 +77,18 @@ export const DrawingCanvas = () => {
         ctxRef.current.beginPath();
         ctxRef.current.moveTo(offsetX, offsetY);
 
-        // Send drawing start data to the server
-        socket?.send(
+        socket.send(
             JSON.stringify({
                 type: "start",
                 x: offsetX,
                 y: offsetY,
                 color: ctxRef.current.strokeStyle,
                 lineWidth: ctxRef.current.lineWidth,
+                erase: ctxRef.current.globalCompositeOperation === "destination-out",
             })
         );
     }, [socket]);
 
-    // Handle drawing
     const handleDraw = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !ctxRef.current) return;
 
@@ -111,40 +96,36 @@ export const DrawingCanvas = () => {
         ctxRef.current.lineTo(offsetX, offsetY);
         ctxRef.current.stroke();
 
-        // Send drawing data to the server
-        socket?.send(
+        socket.send(
             JSON.stringify({
                 type: "draw",
                 x: offsetX,
                 y: offsetY,
                 color: ctxRef.current.strokeStyle,
                 lineWidth: ctxRef.current.lineWidth,
+                erase: ctxRef.current.globalCompositeOperation === "destination-out",
             })
         );
     }, [isDrawing, socket]);
 
-    // Handle drawing end
     const handleEndDrawing = useCallback(() => {
         if (!ctxRef.current) return;
         ctxRef.current.closePath();
         setIsDrawing(false);
 
-        // Send drawing end data to the server
-        socket?.send(
+        socket.send(
             JSON.stringify({
                 type: "end",
             })
         );
     }, [socket]);
 
-    // Set to draw mode
     const setToDraw = useCallback(() => {
         if (ctxRef.current) {
             ctxRef.current.globalCompositeOperation = "source-over";
         }
     }, []);
 
-    // Set to erase mode
     const setToErase = useCallback(() => {
         if (ctxRef.current) {
             ctxRef.current.globalCompositeOperation = "destination-out";
