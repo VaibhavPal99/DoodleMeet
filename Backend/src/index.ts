@@ -79,6 +79,13 @@ wss.on('connection', (ws: WS) => {
             }
         }
 
+        if(data.type === 'cursor'){
+            const roomId  = currentRoomId;
+            if(roomId && rooms[roomId]){
+                broadcast(roomId,data);
+            }
+        }
+
     });
 
     ws.on('close', () => {

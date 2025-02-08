@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import "./DrawingCanvas.css";
 
-interface DrawingCanvasProps {
+export interface DrawingCanvasProps {
     socket: WebSocket;
 }
 

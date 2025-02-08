@@ -55,6 +55,12 @@ wss.on('connection', (ws) => {
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
+        if (data.type === 'cursor') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                broadcast(roomId, data);
+            }
+        }
     });
     ws.on('close', () => {
         if (currentRoomId && rooms[currentRoomId]) {

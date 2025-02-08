@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DrawingCanvas } from "./DrawingCanvas";
+import { CursorTracker } from "./CursorTracker";
 
 export const Home = () => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -74,6 +75,7 @@ export const Home = () => {
             <button onClick={handleJoinRoom}>Join Room</button>
 
             {socket && roomId && <DrawingCanvas socket={socket} />}
+            {socket && roomId && <CursorTracker socket={socket} username={userName}/>}
         </div>
     );
 };
