@@ -8,7 +8,6 @@ wss.on('connection', (ws) => {
     console.log('Client connected');
     let currentRoomId = null;
     ws.on('message', (message) => {
-        console.log('Received:', message);
         const data = JSON.parse(message);
         console.log("data", data);
         if (data.type === 'createRoom') {
@@ -39,6 +38,18 @@ wss.on('connection', (ws) => {
             }
         }
         if (data.type === 'draw') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                broadcast(roomId, data); // Send drawing data to everyone in the room
+            }
+        }
+        if (data.type === 'start') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                broadcast(roomId, data); // Send drawing data to everyone in the room
+            }
+        }
+        if (data.type === 'end') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 broadcast(roomId, data); // Send drawing data to everyone in the room

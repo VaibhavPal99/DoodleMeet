@@ -65,8 +65,20 @@ wss.on('connection', (ws: WS) => {
             }
         }
 
-        
-       
+        if (data.type === 'start') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                broadcast(roomId, data);  // Send drawing data to everyone in the room
+            }
+        }
+
+        if (data.type === 'end') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                broadcast(roomId, data);  // Send drawing data to everyone in the room
+            }
+        }
+
     });
 
     ws.on('close', () => {
