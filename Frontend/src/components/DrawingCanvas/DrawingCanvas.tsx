@@ -62,7 +62,7 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
                 ctx.stroke();
                 break;
             case "end":
-                ctx.closePath();
+                ctx.beginPath();
                 break;
             default:
                 break;
@@ -110,7 +110,7 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
 
     const handleEndDrawing = useCallback(() => {
         if (!ctxRef.current) return;
-        ctxRef.current.closePath();
+        ctxRef.current.beginPath();
         setIsDrawing(false);
 
         socket.send(
@@ -118,6 +118,9 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
                 type: "end",
             })
         );
+
+        ctxRef.current.beginPath();
+
     }, [socket]);
 
     const setToDraw = useCallback(() => {
