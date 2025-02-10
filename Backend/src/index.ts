@@ -61,6 +61,7 @@ wss.on('connection', (ws: WS) => {
         if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -68,6 +69,7 @@ wss.on('connection', (ws: WS) => {
         if (data.type === 'start') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -75,6 +77,7 @@ wss.on('connection', (ws: WS) => {
         if (data.type === 'end') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -82,6 +85,7 @@ wss.on('connection', (ws: WS) => {
         if(data.type === 'cursor'){
             const roomId  = currentRoomId;
             if(roomId && rooms[roomId]){
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId,data);
             }
         }

@@ -1,21 +1,19 @@
 import { useEffect, useState } from "react";
-import { DrawingCanvas } from "./DrawingCanvas";
-import { CursorTracker } from "./CursorTracker";
+import { useNavigate } from "react-router-dom";
+import { useSocket } from "../../context/SocketProvider"; // Updated import
+import { useRecoilState } from "recoil";
+import { usernameAtom } from "../../atoms/usernameAtom";
 
 export const Home = () => {
-    const [socket, setSocket] = useState<WebSocket | null>(null);
+    const { socket } = useSocket(); // Get WebSocket from context
     const [roomId, setRoomId] = useState("");
-    const [userName, setUserName] = useState("");
+    const [userName, setUserName] = useRecoilState(usernameAtom);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const ws = new WebSocket("ws://localhost:8080"); // Adjust WebSocket URL if needed
+        if (!socket) return;
 
-        ws.onopen = () => {
-            console.log("WebSocket connection established");
-            setSocket(ws);
-        };
-
-        ws.onmessage = async (event) => {
+        socket.onmessage = async (event) => {
             try {
                 let textData;
                 if (event.data instanceof Blob) {
@@ -23,29 +21,27 @@ export const Home = () => {
                 } else {
                     textData = event.data;
                 }
-                
+
                 const data = JSON.parse(textData);
                 console.log("Data", data);
+
                 if (data.type === "roomCreated") {
-                    setRoomId(data.roomId); 
+                    setRoomId(data.roomId);
+                    navigate(`/room/${data.roomId}`);
                 }
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
             }
         };
 
-        ws.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
-
         return () => {
-            ws.close();
+            socket.onmessage = null; // Cleanup event listener
         };
-    }, []);
+    }, [socket]);
 
     const handleCreateRoom = () => {
         if (!socket) return;
-        socket.send(JSON.stringify({ type: "createRoom"}));
+        socket.send(JSON.stringify({ type: "createRoom" }));
     };
 
     const handleJoinRoom = () => {
@@ -53,11 +49,15 @@ export const Home = () => {
             console.log("No socket connection or no roomId");
             return;
         }
-        socket.send(JSON.stringify({ type: "joinRoom", roomId}));
+        socket.send(JSON.stringify({ type: "joinRoom", roomId }));
+        navigate(`/room/${roomId}`);
     };
 
     return (
         <div>
+            <div>
+                
+            </div>
             <input
                 type="text"
                 value={userName}
@@ -65,7 +65,7 @@ export const Home = () => {
                 placeholder="Enter Your Name"
             />
             <button onClick={handleCreateRoom}>Create Room</button>
-            
+
             <input
                 type="text"
                 value={roomId}
@@ -74,8 +74,6 @@ export const Home = () => {
             />
             <button onClick={handleJoinRoom}>Join Room</button>
 
-            {socket && roomId && <DrawingCanvas socket={socket} />}
-            {socket && roomId && <CursorTracker socket={socket} username={userName}/>}
         </div>
     );
 };

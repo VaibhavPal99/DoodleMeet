@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
 import "./CursorTracker.css";
 
+import { useRecoilValue } from "recoil";
+import { usernameAtom } from "../../atoms/usernameAtom";
+import { useSocket } from "../../context/SocketProvider";
+
 interface CursorData {
   user: string;
   x: number;
   y: number;
 }
 
-interface CursorTrackerProps {
-  socket: WebSocket;
-  username: string;
-}
 
-export const CursorTracker = ({ socket, username }: CursorTrackerProps) => {
+
+export const CursorTracker = () => {
   const [cursors, setCursors] = useState<Record<string, CursorData>>({});
+  const username = useRecoilValue(usernameAtom);
+  const {socket} = useSocket();
+  console.log(username);
 
   useEffect(() => {
+    if(!socket) return;
     const handleSocketMessage = async (event: MessageEvent) => {
       let textData;
 
@@ -41,6 +46,9 @@ export const CursorTracker = ({ socket, username }: CursorTrackerProps) => {
   }, [socket]);
 
   const handleMouseMove = (e: MouseEvent) => {
+
+    if(!socket) return;
+
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(
         JSON.stringify({

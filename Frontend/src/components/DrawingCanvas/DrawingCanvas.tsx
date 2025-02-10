@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import "./DrawingCanvas.css";
+import { useSocket } from "../../context/SocketProvider";
+import { CursorTracker } from "./CursorTracker";
 
-export interface DrawingCanvasProps {
-    socket: WebSocket;
-}
-
-export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
+export const DrawingCanvas = () => {
+    const { socket } = useSocket();
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [mode, setMode] = useState<"draw" | "erase">("draw"); // Track draw/erase mode
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -27,6 +27,7 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
     }, []);
 
     useEffect(() => {
+        if (!socket) return;
         socket.onmessage = async (event) => {
             try {
                 let textData;
@@ -70,10 +71,11 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
     };
 
     const handleStartDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!ctxRef.current) return;
+        if (!ctxRef.current || !socket) return;
         setIsDrawing(true);
 
         const { offsetX, offsetY } = event.nativeEvent;
+        ctxRef.current.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
         ctxRef.current.beginPath();
         ctxRef.current.moveTo(offsetX, offsetY);
 
@@ -84,15 +86,16 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
                 y: offsetY,
                 color: ctxRef.current.strokeStyle,
                 lineWidth: ctxRef.current.lineWidth,
-                erase: ctxRef.current.globalCompositeOperation === "destination-out",
+                erase: mode === "erase",
             })
         );
-    }, [socket]);
+    }, [socket, mode]);
 
     const handleDraw = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!isDrawing || !ctxRef.current) return;
+        if (!isDrawing || !ctxRef.current || !socket) return;
 
         const { offsetX, offsetY } = event.nativeEvent;
+        ctxRef.current.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
         ctxRef.current.lineTo(offsetX, offsetY);
         ctxRef.current.stroke();
 
@@ -103,13 +106,13 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
                 y: offsetY,
                 color: ctxRef.current.strokeStyle,
                 lineWidth: ctxRef.current.lineWidth,
-                erase: ctxRef.current.globalCompositeOperation === "destination-out",
+                erase: mode === "erase",
             })
         );
-    }, [isDrawing, socket]);
+    }, [isDrawing, socket, mode]);
 
     const handleEndDrawing = useCallback(() => {
-        if (!ctxRef.current) return;
+        if (!ctxRef.current || !socket) return;
         setIsDrawing(false);
 
         socket.send(
@@ -120,14 +123,19 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
     }, [socket]);
 
     const setToDraw = useCallback(() => {
+        setMode("draw");
         if (ctxRef.current) {
             ctxRef.current.globalCompositeOperation = "source-over";
+            console.log("Mode set to Draw");
         }
     }, []);
 
     const setToErase = useCallback(() => {
+        setMode("erase");
         if (ctxRef.current) {
             ctxRef.current.globalCompositeOperation = "destination-out";
+            ctxRef.current.lineWidth = 5;
+            console.log("Mode set to Erase");
         }
     }, []);
 
@@ -141,9 +149,10 @@ export const DrawingCanvas = ({ socket }: DrawingCanvasProps) => {
                 onMouseUp={handleEndDrawing}
                 onMouseLeave={handleEndDrawing}
             />
+            <CursorTracker />
             <div>
-                <button onClick={setToDraw}>Draw</button>
-                <button onClick={setToErase}>Erase</button>
+                <button onClick={setToDraw} className={mode === "draw" ? "active" : ""}>Draw</button>
+                <button onClick={setToErase} className={mode === "erase" ? "active" : ""}>Erase</button>
             </div>
         </>
     );
