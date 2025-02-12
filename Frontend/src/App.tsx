@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import { Home } from "./components/DrawingCanvas/Home"
-import { DrawingPage } from "./components/Toolbar/DrawingPage"
+import { Home } from "./components/Home/Home"
+
+import { DrawingCanvas } from "./components/DrawingCanvas/DrawingCanvas"
 
 
 
@@ -8,14 +9,11 @@ import { DrawingPage } from "./components/Toolbar/DrawingPage"
 
 function App() {
 
-  
-  
-
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home/>} />
-        <Route path="/room/:id" element={<DrawingPage/>}/>
+        <Route path="/room/:id" element={<DrawingCanvas/>}/>
       </Routes>
     </BrowserRouter>
   )

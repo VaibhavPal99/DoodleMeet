@@ -10,14 +10,33 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080"); // Replace with your WebSocket URL
-    setSocket(ws);
+    let ws: WebSocket | null = null;
 
-    ws.onopen = () => console.log("Connected to WebSocket");
-    ws.onclose = () => console.log("WebSocket disconnected");
+    const connectWebSocket = () => {
+      ws = new WebSocket("ws://localhost:8080"); // Replace with your WebSocket server URL
+      setSocket(ws);
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket");
+
+        // If a roomId exists, rejoin the room on refresh
+        const storedRoomId = localStorage.getItem("roomId");
+        if (storedRoomId) {
+          ws!.send(JSON.stringify({ type: "joinRoom", roomId: storedRoomId }));
+          console.log(`Rejoining room: ${storedRoomId}`);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected, attempting to reconnect...");
+        setTimeout(connectWebSocket, 2000); // Auto-reconnect after 2 seconds
+      };
+    };
+
+    connectWebSocket();
 
     return () => {
-      ws.close();
+      if (ws) ws.close();
     };
   }, []);
 

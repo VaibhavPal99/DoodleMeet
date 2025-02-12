@@ -37,27 +37,45 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
             }
         }
+        if (data.type === 'leaveRoom') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                rooms[roomId] = rooms[roomId].filter(client => client !== ws);
+                broadcast(roomId, { type: 'userLeft', roomId });
+                console.log(`User left room: ${roomId}`);
+                if (rooms[roomId].length === 0) {
+                    delete rooms[roomId];
+                    console.log(`Room ${roomId} deleted (no users left).`);
+                }
+                ws.send(JSON.stringify({ type: 'leftRoom', roomId }));
+                currentRoomId = null;
+            }
+        }
         if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
         if (data.type === 'start') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
         if (data.type === 'end') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
         if (data.type === 'cursor') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
                 broadcast(roomId, data);
             }
         }

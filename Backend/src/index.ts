@@ -58,6 +58,30 @@ wss.on('connection', (ws: WS) => {
 
         }
 
+        if (data.type === 'leaveRoom') {
+            const roomId = currentRoomId;
+            
+            if (roomId && rooms[roomId]) {
+                
+                rooms[roomId] = rooms[roomId].filter(client => client !== ws);
+                
+                
+                broadcast(roomId, { type: 'userLeft', roomId });
+        
+                console.log(`User left room: ${roomId}`);
+        
+                
+                if (rooms[roomId].length === 0) {
+                    delete rooms[roomId];
+                    console.log(`Room ${roomId} deleted (no users left).`);
+                }
+                ws.send(JSON.stringify({ type: 'leftRoom', roomId }));
+        
+                currentRoomId = null;
+            }
+        }
+        
+
         if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
