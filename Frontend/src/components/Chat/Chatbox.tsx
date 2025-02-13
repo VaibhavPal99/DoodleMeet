@@ -64,7 +64,10 @@ export default function Chatbox() {
             {isOpen && (
                 <div className="chatbox-body">
                     {messages.map((msg, index) => (
-                        <div key={index} className="chatbox-message">
+                        <div
+                            key={index}
+                            className={`chatbox-message ${msg.sender === username ? "user" : "other"}`}
+                        >
                             <strong>{msg.sender}:</strong> {msg.content}
                         </div>
                     ))}

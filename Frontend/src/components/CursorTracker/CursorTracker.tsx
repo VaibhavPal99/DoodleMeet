@@ -28,10 +28,18 @@ export const CursorTracker = () => {
         const data = JSON.parse(textData);
 
         if (data.type === "cursor") {
-          setCursors((prev) => ({
-            ...prev,
-            [data.user]: { user: data.user, x: data.x, y: data.y },
-          }));
+          if (data.user !== username) {  
+            setCursors((prev) => ({
+                ...prev,
+                [data.user]: { user: data.user, x: data.x, y: data.y },
+            }));
+          }
+        }else if (data.type === "userLeft") {
+          setCursors((prev) => {
+              const updatedCursors = { ...prev };
+              delete updatedCursors[data.userId]; // Remove user's cursor
+              return updatedCursors;
+          });
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);

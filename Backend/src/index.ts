@@ -3,11 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, Room } from './types/types';
 import Redis from 'ioredis';
 
+const PORT = process.env.PORT || 8080;
 const rooms: Room = {};
 
 const redis = new Redis();
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: Number(process.env.PORT) || 8080 });
 
 wss.on('connection', (ws: WS) => {
     console.log('Client connected');
@@ -158,6 +159,32 @@ wss.on('connection', (ws: WS) => {
             }
         }
 
+        // if (data.type === 'undo') {
+        //     const roomId = currentRoomId;
+        //     if (!roomId || !rooms[roomId]) return;
+
+        //     const lastAction = await redis.rpop(`canvas:${roomId}`);
+        //     if (lastAction) {
+        //         await redis.rpush(`redo:${roomId}`, lastAction);
+        //     }
+
+        //     const updatedHistory = await redis.lrange(`canvas:${roomId}`, 0, -1);
+        //     ws.send(JSON.stringify({ type: 'canvasState', state: updatedHistory.map((item) => JSON.parse(item)) }));
+        // }
+
+        // if (data.type === 'redo') {
+        //     const roomId = currentRoomId;
+        //     if (!roomId || !rooms[roomId]) return;
+
+        //     const lastUndone = await redis.rpop(`redo:${roomId}`);
+        //     if (lastUndone) {
+        //         await redis.rpush(`canvas:${roomId}`, lastUndone);
+        //     }
+
+        //     const updatedHistory = await redis.lrange(`canvas:${roomId}`, 0, -1);
+        //     ws.send(JSON.stringify({ type: 'canvasState', state: updatedHistory.map((item) => JSON.parse(item)) }));
+        // }
+
     });
 
     ws.on('close', () => {
@@ -192,4 +219,4 @@ const broadcast = (roomId : string, message : Message) => {
     }
 };
 
-console.log('WebSocket server is running on ws://localhost:8080');
+console.log('WebSocket server is running on ws://localhost:' + (process.env.PORT || 8080));

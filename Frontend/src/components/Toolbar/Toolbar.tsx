@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaPencilAlt, FaUndo, FaRedo, FaDownload, FaCopy, FaSignOutAlt, FaArrowsAltH } from "react-icons/fa";
+import { FaPencilAlt, FaDownload, FaCopy, FaSignOutAlt, FaArrowsAltH } from "react-icons/fa";
 import { BsEraserFill } from "react-icons/bs";
 
 import "./Toolbar.css";
@@ -9,22 +9,20 @@ interface ToolbarProps {
   setToErase: () => void;
   onColorChange: (color: string) => void;
   onCopyRoomId: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
   onLeaveRoom: () => void;
   onSizeChange: (size: number) => void;
   onDownload : () => void
 }
 
-export const Toolbar = ({ setToDraw, setToErase, onColorChange, onCopyRoomId, onUndo, onRedo, onLeaveRoom, onSizeChange, onDownload }: ToolbarProps) => {
+export const Toolbar = ({ setToDraw, setToErase, onColorChange, onCopyRoomId, onLeaveRoom, onSizeChange, onDownload }: ToolbarProps) => {
   const [showSlider, setShowSlider] = useState(false); // State to toggle slider visibility
 
   return (
     <div className="toolbar">
 
-      <button className="tool-button" title="Undo" onClick={onUndo}><FaUndo /></button>
+      {/* <button className="tool-button" title="Undo" onClick={onUndo}><FaUndo /></button>
 
-      <button className="tool-button" title="Redo" onClick={onRedo}><FaRedo /></button>
+      <button className="tool-button" title="Redo" onClick={onRedo}><FaRedo /></button> */}
       
       <button className="tool-button" title="Pencil" onClick={setToDraw}><FaPencilAlt /></button>
       

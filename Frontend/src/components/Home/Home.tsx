@@ -103,7 +103,7 @@ export const Home = () => {
                 />
             </div>
 
-            <button className="create-btn" onClick={handleCreateRoom}>
+            <button className="create-btn" onClick={handleCreateRoom} disabled={!userName.trim()}>
                 ✨ Create New Room
             </button>
 
@@ -118,7 +118,7 @@ export const Home = () => {
                 />
             </div>
 
-            <button className="join-btn" onClick={handleJoinRoom}>
+            <button className="join-btn" onClick={handleJoinRoom} disabled={!userName.trim() || !roomId.trim()}>
                 🚀 Join Room
             </button>
         </div>

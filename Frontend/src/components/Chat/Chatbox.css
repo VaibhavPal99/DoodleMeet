@@ -35,11 +35,28 @@
     gap: 6px;
 }
 
+/* General message styling */
 .chatbox-message {
-    background: #e9ecef;
+    max-width: 70%;
     padding: 8px;
     border-radius: 5px;
     font-size: 14px;
+}
+
+/* User's message (align right) */
+.chatbox-message.user {
+    align-self: flex-end;
+    background: #7094ba;
+    color: white;
+    border-top-right-radius: 0;
+}
+
+/* Other user's message (align left) */
+.chatbox-message.other {
+    align-self: flex-start;
+    background: #e9ecef;
+    color: black;
+    border-top-left-radius: 0;
 }
 
 .chatbox-footer {

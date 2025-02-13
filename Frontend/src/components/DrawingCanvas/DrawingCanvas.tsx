@@ -204,14 +204,6 @@ export const DrawingCanvas = () => {
         }
     };
 
-    const handleUndo = () => {
-      
-    };
-
-    const handleRedo = () => {
-       
-    };
-
     const handleLeaveRoom = () => {
         if (socket) {
             socket.send(JSON.stringify({ type: "leaveRoom", roomId }));
@@ -253,9 +245,7 @@ export const DrawingCanvas = () => {
                 setToDraw={setToDraw} 
                 setToErase={setToErase} 
                 onColorChange={handleColorChange} 
-                onCopyRoomId={handleCopyRoomId} 
-                onUndo={handleUndo} 
-                onRedo={handleRedo}
+                onCopyRoomId={handleCopyRoomId}
                 onLeaveRoom={handleLeaveRoom}
                 onSizeChange={handleSizeChange}
                 onDownload={handleDownload}

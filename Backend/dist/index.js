@@ -15,9 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = require("ws");
 const uuid_1 = require("uuid");
 const ioredis_1 = __importDefault(require("ioredis"));
+const PORT = process.env.PORT || 8080;
 const rooms = {};
 const redis = new ioredis_1.default();
-const wss = new ws_1.WebSocketServer({ port: 8080 });
+const wss = new ws_1.WebSocketServer({ port: Number(process.env.PORT) || 8080 });
 wss.on('connection', (ws) => {
     console.log('Client connected');
     let currentRoomId = null;
@@ -119,6 +120,26 @@ wss.on('connection', (ws) => {
                 broadcast(roomId, data);
             }
         }
+        // if (data.type === 'undo') {
+        //     const roomId = currentRoomId;
+        //     if (!roomId || !rooms[roomId]) return;
+        //     const lastAction = await redis.rpop(`canvas:${roomId}`);
+        //     if (lastAction) {
+        //         await redis.rpush(`redo:${roomId}`, lastAction);
+        //     }
+        //     const updatedHistory = await redis.lrange(`canvas:${roomId}`, 0, -1);
+        //     ws.send(JSON.stringify({ type: 'canvasState', state: updatedHistory.map((item) => JSON.parse(item)) }));
+        // }
+        // if (data.type === 'redo') {
+        //     const roomId = currentRoomId;
+        //     if (!roomId || !rooms[roomId]) return;
+        //     const lastUndone = await redis.rpop(`redo:${roomId}`);
+        //     if (lastUndone) {
+        //         await redis.rpush(`canvas:${roomId}`, lastUndone);
+        //     }
+        //     const updatedHistory = await redis.lrange(`canvas:${roomId}`, 0, -1);
+        //     ws.send(JSON.stringify({ type: 'canvasState', state: updatedHistory.map((item) => JSON.parse(item)) }));
+        // }
     }));
     ws.on('close', () => {
         if (currentRoomId && rooms[currentRoomId]) {
@@ -144,4 +165,4 @@ const broadcast = (roomId, message) => {
         });
     }
 };
-console.log('WebSocket server is running on ws://localhost:8080');
+console.log('WebSocket server is running on ws://localhost:' + (process.env.PORT || 8080));
