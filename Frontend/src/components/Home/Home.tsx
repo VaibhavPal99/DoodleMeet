@@ -86,7 +86,8 @@ export const Home = () => {
 
     return (
         <div className="home-container">
-            <h1 className="title">🎨 Collaborative Whiteboard</h1>
+            <h1 className="title">DoodleMeet </h1>
+            <h1 className="title">🎨 A Collaborative Whiteboard</h1>
 
             <div className="input-group">
                 <label htmlFor="username">👤 Your Name</label>

@@ -1,8 +1,11 @@
 import { WebSocket as WS, WebSocketServer } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Room } from './types/types';
+import Redis from 'ioredis';
 
 const rooms: Room = {};
+
+const redis = new Redis();
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -10,7 +13,7 @@ wss.on('connection', (ws: WS) => {
     console.log('Client connected');
     let currentRoomId : string | null = null;
 
-    ws.on('message', (message: string) => {
+    ws.on('message', async (message: string) => {
 
         const data = JSON.parse(message);
         console.log("data",data);
@@ -48,7 +51,18 @@ wss.on('connection', (ws: WS) => {
                 // Send a confirmation to the user that they joined the room
                 ws.send(JSON.stringify({ type: 'roomJoined', roomId }));
 
-                // Notify other users in the room that a new user has joined
+
+                const savedCanvasState = await redis.lrange(`canvas:${roomId}`,0,-1);
+
+                if(savedCanvasState){
+                    ws.send(JSON.stringify({type : 'canvasState', state: savedCanvasState.map((item) => JSON.parse(item))}))
+                }
+
+                const chatHistory = await redis.lrange(`chat:${roomId}`, 0, -1);
+                if (chatHistory.length > 0) {
+                    ws.send(JSON.stringify({ type: 'chatHistory', messages: chatHistory.map((msg) => JSON.parse(msg)) }));
+                }
+
                 broadcast(roomId, { type: 'userJoined', roomId });
                 console.log(`User joined room: ${roomId}`);
             }else {
@@ -80,12 +94,35 @@ wss.on('connection', (ws: WS) => {
                 currentRoomId = null;
             }
         }
+
+        if (data.type === 'message') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                const chatMessage = {
+                    type: 'message',
+                    sender: data.sender, // User's name
+                    content: data.content, // Message content
+                    timestamp: new Date().toISOString()
+                };
+        
+                // Save the message in Redis (optional, for history retrieval)
+                await redis.rpush(`chat:${roomId}`, JSON.stringify(chatMessage));
+        
+                // Broadcast the message to all users in the room
+                broadcast(roomId, chatMessage);
+                console.log(`Message sent in room ${roomId}: ${data.content}`);
+            }
+        }
+        
         
 
         if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+
+                await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
+
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -93,7 +130,11 @@ wss.on('connection', (ws: WS) => {
         if (data.type === 'start') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
+
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+
+                await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
+
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -102,6 +143,9 @@ wss.on('connection', (ws: WS) => {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+
+                await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
+
                 broadcast(roomId, data);  // Send drawing data to everyone in the room
             }
         }
@@ -118,12 +162,15 @@ wss.on('connection', (ws: WS) => {
 
     ws.on('close', () => {
         if (currentRoomId && rooms[currentRoomId]) {
-            rooms[currentRoomId] = rooms[currentRoomId].filter(client => client !== ws);
-
+            // rooms[currentRoomId] = rooms[currentRoomId].filter(client => client !== ws);
+            rooms[currentRoomId] = rooms[currentRoomId].filter(client => client.readyState === WS.OPEN);
             // If the room is empty, remove it from the rooms object
             
             if (rooms[currentRoomId].length === 0) {
                 delete rooms[currentRoomId];
+                redis.del(`canvas:${currentRoomId}`); // Delete canvas state when room is empty
+                redis.del(`chat:${currentRoomId}`);
+                console.log(`Room ${currentRoomId} deleted.`);
             }
 
             // Notify other users in the room that someone has left

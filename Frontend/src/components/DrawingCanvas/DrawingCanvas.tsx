@@ -5,6 +5,7 @@ import { Toolbar } from "../Toolbar/Toolbar";
 import { useRecoilValue } from "recoil";
 import { roomIdAtom } from "../../atoms/roomIdAtom";
 import { useNavigate } from "react-router-dom";
+import Chatbox from "../Chat/Chatbox";
 
 export const DrawingCanvas = () => {
     const { socket } = useSocket();
@@ -47,7 +48,11 @@ export const DrawingCanvas = () => {
                 }
 
                 const data = JSON.parse(textData);
-                updateCanvas(data);
+                if (data.type === "canvasState") {
+                    restoreCanvas(data.state);  // Restore the saved canvas state
+                } else {
+                    updateCanvas(data);
+                }
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
             }
@@ -78,6 +83,33 @@ export const DrawingCanvas = () => {
                 break;
         }
     };
+
+    const restoreCanvas = (savedState: any) => {
+        const ctx = ctxRef.current;
+        if (!ctx || !savedState) return;
+    
+        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height); // Clear canvas
+    
+        savedState.forEach((stroke: any) => {
+            if (stroke.type === "start") {
+                ctx.beginPath();
+                ctx.moveTo(stroke.x, stroke.y);
+            } else if (stroke.type === "draw") {
+                ctx.lineTo(stroke.x, stroke.y);
+                ctx.stroke();
+            } else if (stroke.type === "end") {
+                ctx.closePath();
+            }
+    
+            ctx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = stroke.lineWidth;
+        });
+    
+        console.log("Canvas restored from Redis!");
+    };
+    
+    
 
     const handleStartDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!ctxRef.current || !socket || !canvasRef.current) return;
@@ -237,6 +269,7 @@ export const DrawingCanvas = () => {
                 onMouseLeave={handleEndDrawing}
             />
             <CursorTracker />
+            <Chatbox/>
         </div>
     );
 };

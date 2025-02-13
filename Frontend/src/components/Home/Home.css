@@ -5,7 +5,7 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    background: linear-gradient(135deg, #26202d, #2575fc);
     color: white;
     font-family: 'Arial', sans-serif;
     padding: 20px;
@@ -29,7 +29,7 @@
     display: block;
     margin-bottom: 5px;
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: #FFFFFF !important;
 }
 
 .input-group input {
@@ -47,6 +47,10 @@
     outline: none;
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.05);
+}
+
+.input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.7); /* Makes placeholder text white with slight transparency */
 }
 
 .create-btn, .join-btn {

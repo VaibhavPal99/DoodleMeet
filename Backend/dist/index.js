@@ -1,13 +1,27 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = require("ws");
 const uuid_1 = require("uuid");
+const ioredis_1 = __importDefault(require("ioredis"));
 const rooms = {};
+const redis = new ioredis_1.default();
 const wss = new ws_1.WebSocketServer({ port: 8080 });
 wss.on('connection', (ws) => {
     console.log('Client connected');
     let currentRoomId = null;
-    ws.on('message', (message) => {
+    ws.on('message', (message) => __awaiter(void 0, void 0, void 0, function* () {
         const data = JSON.parse(message);
         console.log("data", data);
         if (data.type === 'createRoom') {
@@ -28,7 +42,14 @@ wss.on('connection', (ws) => {
                 console.log(rooms);
                 // Send a confirmation to the user that they joined the room
                 ws.send(JSON.stringify({ type: 'roomJoined', roomId }));
-                // Notify other users in the room that a new user has joined
+                const savedCanvasState = yield redis.lrange(`canvas:${roomId}`, 0, -1);
+                if (savedCanvasState) {
+                    ws.send(JSON.stringify({ type: 'canvasState', state: savedCanvasState.map((item) => JSON.parse(item)) }));
+                }
+                const chatHistory = yield redis.lrange(`chat:${roomId}`, 0, -1);
+                if (chatHistory.length > 0) {
+                    ws.send(JSON.stringify({ type: 'chatHistory', messages: chatHistory.map((msg) => JSON.parse(msg)) }));
+                }
                 broadcast(roomId, { type: 'userJoined', roomId });
                 console.log(`User joined room: ${roomId}`);
             }
@@ -51,10 +72,27 @@ wss.on('connection', (ws) => {
                 currentRoomId = null;
             }
         }
+        if (data.type === 'message') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+                const chatMessage = {
+                    type: 'message',
+                    sender: data.sender,
+                    content: data.content,
+                    timestamp: new Date().toISOString()
+                };
+                // Save the message in Redis (optional, for history retrieval)
+                yield redis.rpush(`chat:${roomId}`, JSON.stringify(chatMessage));
+                // Broadcast the message to all users in the room
+                broadcast(roomId, chatMessage);
+                console.log(`Message sent in room ${roomId}: ${data.content}`);
+            }
+        }
         if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
@@ -62,6 +100,7 @@ wss.on('connection', (ws) => {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
@@ -69,6 +108,7 @@ wss.on('connection', (ws) => {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
@@ -79,13 +119,17 @@ wss.on('connection', (ws) => {
                 broadcast(roomId, data);
             }
         }
-    });
+    }));
     ws.on('close', () => {
         if (currentRoomId && rooms[currentRoomId]) {
-            rooms[currentRoomId] = rooms[currentRoomId].filter(client => client !== ws);
+            // rooms[currentRoomId] = rooms[currentRoomId].filter(client => client !== ws);
+            rooms[currentRoomId] = rooms[currentRoomId].filter(client => client.readyState === ws_1.WebSocket.OPEN);
             // If the room is empty, remove it from the rooms object
             if (rooms[currentRoomId].length === 0) {
                 delete rooms[currentRoomId];
+                redis.del(`canvas:${currentRoomId}`); // Delete canvas state when room is empty
+                redis.del(`chat:${currentRoomId}`);
+                console.log(`Room ${currentRoomId} deleted.`);
             }
             // Notify other users in the room that someone has left
             broadcast(currentRoomId, { type: 'userLeft' });

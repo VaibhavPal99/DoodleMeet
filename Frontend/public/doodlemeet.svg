@@ -1,0 +1,17 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="32"
+    height="32"
+    viewBox="0 0 64 64"
+    fill="none"
+>
+    <!-- Palette Base -->
+    <path d="M32 4C17 4 4 16 4 32s13 28 28 28c4 0 7-3 7-7 0-4-3-7-7-7h-3c-3 0-5-2-5-5 0-6 5-10 10-10h7c5 0 9-4 9-9S47 4 32 4z"
+          fill="#FFD700" stroke="#000" stroke-width="2"/>
+
+    <!-- Paint Dots -->
+    <circle cx="20" cy="18" r="4" fill="red"/>
+    <circle cx="40" cy="14" r="4" fill="blue"/>
+    <circle cx="50" cy="28" r="4" fill="green"/>
+    <circle cx="30" cy="30" r="4" fill="purple"/>
+</svg>
