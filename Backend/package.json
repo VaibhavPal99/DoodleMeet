@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@types/ws": "^8.5.14",
+    "dotenv": "^16.4.7",
     "ioredis": "^5.5.0",
     "uuid": "^11.0.5",
     "ws": "^8.18.0"

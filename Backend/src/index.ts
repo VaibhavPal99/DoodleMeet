@@ -2,13 +2,22 @@ import { WebSocket as WS, WebSocketServer } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Room } from './types/types';
 import Redis from 'ioredis';
+import dotenv from 'dotenv';
 
-const PORT = process.env.PORT || 8080;
+dotenv.config();
+
 const rooms: Room = {};
 
-const redis = new Redis();
+// const redisUrl = process.env.REDIS_URL as string;
 
-const wss = new WebSocketServer({ port: Number(process.env.PORT) || 8080 });
+// const redis = new Redis(redisUrl, {
+//     tls: { rejectUnauthorized: false } // Required for Render's Redis
+// });
+
+const redis = new Redis("rediss://red-cumvljlsvqrc73fm1mt0:PPzm8DOtNH71EbcwkfAqKSw7tozc9XW7@oregon-redis.render.com:6379");
+
+
+const wss = new WebSocketServer({ port: 8080 });
 
 wss.on('connection', (ws: WS) => {
     console.log('Client connected');
@@ -115,6 +124,17 @@ wss.on('connection', (ws: WS) => {
             }
         }
         
+        if (data.type === 'start') {
+            const roomId = currentRoomId;
+            if (roomId && rooms[roomId]) {
+
+                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+
+                await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
+
+                broadcast(roomId, data);  // Send drawing data to everyone in the room
+            }
+        }
         
 
         if (data.type === 'draw') {
@@ -128,18 +148,7 @@ wss.on('connection', (ws: WS) => {
             }
         }
 
-        if (data.type === 'start') {
-            const roomId = currentRoomId;
-            if (roomId && rooms[roomId]) {
-
-                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
-
-                await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
-
-                broadcast(roomId, data);  // Send drawing data to everyone in the room
-            }
-        }
-
+        
         if (data.type === 'end') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
@@ -219,4 +228,4 @@ const broadcast = (roomId : string, message : Message) => {
     }
 };
 
-console.log('WebSocket server is running on ws://localhost:' + (process.env.PORT || 8080));
+console.log('WebSocket server is running on ws://localhost:8080');

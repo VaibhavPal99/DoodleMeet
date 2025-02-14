@@ -15,10 +15,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = require("ws");
 const uuid_1 = require("uuid");
 const ioredis_1 = __importDefault(require("ioredis"));
-const PORT = process.env.PORT || 8080;
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const rooms = {};
-const redis = new ioredis_1.default();
-const wss = new ws_1.WebSocketServer({ port: Number(process.env.PORT) || 8080 });
+// const redisUrl = process.env.REDIS_URL as string;
+// const redis = new Redis(redisUrl, {
+//     tls: { rejectUnauthorized: false } // Required for Render's Redis
+// });
+const redis = new ioredis_1.default("rediss://red-cumvljlsvqrc73fm1mt0:PPzm8DOtNH71EbcwkfAqKSw7tozc9XW7@oregon-redis.render.com:6379");
+const wss = new ws_1.WebSocketServer({ port: 8080 });
 wss.on('connection', (ws) => {
     console.log('Client connected');
     let currentRoomId = null;
@@ -89,7 +94,7 @@ wss.on('connection', (ws) => {
                 console.log(`Message sent in room ${roomId}: ${data.content}`);
             }
         }
-        if (data.type === 'draw') {
+        if (data.type === 'start') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
@@ -97,7 +102,7 @@ wss.on('connection', (ws) => {
                 broadcast(roomId, data); // Send drawing data to everyone in the room
             }
         }
-        if (data.type === 'start') {
+        if (data.type === 'draw') {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
@@ -165,4 +170,4 @@ const broadcast = (roomId, message) => {
         });
     }
 };
-console.log('WebSocket server is running on ws://localhost:' + (process.env.PORT || 8080));
+console.log('WebSocket server is running on ws://localhost:8080');
