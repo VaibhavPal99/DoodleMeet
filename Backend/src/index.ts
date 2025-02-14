@@ -61,7 +61,7 @@ wss.on('connection', (ws: WS) => {
                 // Send a confirmation to the user that they joined the room
                 ws.send(JSON.stringify({ type: 'roomJoined', roomId }));
 
-
+                broadcast(roomId, { type: 'userJoined', roomId });
                 const savedCanvasState = await redis.lrange(`canvas:${roomId}`,0,-1);
 
                 if(savedCanvasState){
@@ -73,7 +73,7 @@ wss.on('connection', (ws: WS) => {
                     ws.send(JSON.stringify({ type: 'chatHistory', messages: chatHistory.map((msg) => JSON.parse(msg)) }));
                 }
 
-                broadcast(roomId, { type: 'userJoined', roomId });
+                
                 console.log(`User joined room: ${roomId}`);
             }else {
                 // Send an error if the room doesn't exist
@@ -114,12 +114,12 @@ wss.on('connection', (ws: WS) => {
                     content: data.content, // Message content
                     timestamp: new Date().toISOString()
                 };
-        
+                broadcast(roomId, chatMessage);
                 // Save the message in Redis (optional, for history retrieval)
                 await redis.rpush(`chat:${roomId}`, JSON.stringify(chatMessage));
         
                 // Broadcast the message to all users in the room
-                broadcast(roomId, chatMessage);
+                
                 console.log(`Message sent in room ${roomId}: ${data.content}`);
             }
         }

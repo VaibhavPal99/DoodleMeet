@@ -13,7 +13,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     let ws: WebSocket | null = null;
 
     const connectWebSocket = () => {
-      ws = new WebSocket("wss://duddlemeet.onrender.com"); // Replace with your WebSocket server URL
+      ws = new WebSocket("ws://localhost:8080")
       setSocket(ws);
 
       ws.onopen = () => {
