@@ -15,8 +15,8 @@ export const DrawingCanvas = () => {
     const [mode, setMode] = useState<"draw" | "erase">("draw");
     const [color, setColor] = useState("black");
     const roomId = useRecoilValue(roomIdAtom) || localStorage.getItem("roomId");
-    // const history = useRef<ImageData[]>([]);
-    // const redoStack = useRef<ImageData[]>([]);
+  
+    
     const navigate = useNavigate();
     const [size, setSize] = useState(5);
 
@@ -124,7 +124,7 @@ export const DrawingCanvas = () => {
 
         const { offsetX, offsetY } = event.nativeEvent;
         ctx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-        ctx.strokeStyle = mode === "erase" ? "white" : color;
+        // ctx.strokeStyle = mode === "erase" ? "white" : color;
         ctx.lineWidth = size;
         ctx.beginPath();
         ctx.moveTo(offsetX, offsetY);
