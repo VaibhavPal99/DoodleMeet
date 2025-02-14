@@ -129,10 +129,11 @@ wss.on('connection', (ws: WS) => {
             if (roomId && rooms[roomId]) {
 
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+                broadcast(roomId, data); 
 
                 await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
 
-                broadcast(roomId, data);  // Send drawing data to everyone in the room
+                 // Send drawing data to everyone in the room
             }
         }
         
@@ -141,10 +142,11 @@ wss.on('connection', (ws: WS) => {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
-
+                
+                broadcast(roomId, data);
                 await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
 
-                broadcast(roomId, data);  // Send drawing data to everyone in the room
+                  // Send drawing data to everyone in the room
             }
         }
 
@@ -153,10 +155,10 @@ wss.on('connection', (ws: WS) => {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
                 console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
-
+                broadcast(roomId, data);
                 await redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
 
-                broadcast(roomId, data);  // Send drawing data to everyone in the room
+                  // Send drawing data to everyone in the room
             }
         }
 
@@ -201,7 +203,7 @@ wss.on('connection', (ws: WS) => {
             // rooms[currentRoomId] = rooms[currentRoomId].filter(client => client !== ws);
             rooms[currentRoomId] = rooms[currentRoomId].filter(client => client.readyState === WS.OPEN);
             // If the room is empty, remove it from the rooms object
-            
+            broadcast(currentRoomId, { type: 'userLeft' });
             if (rooms[currentRoomId].length === 0) {
                 delete rooms[currentRoomId];
                 redis.del(`canvas:${currentRoomId}`); // Delete canvas state when room is empty
@@ -211,7 +213,7 @@ wss.on('connection', (ws: WS) => {
 
             // Notify other users in the room that someone has left
 
-            broadcast(currentRoomId, { type: 'userLeft' });
+            
             console.log('User disconnected from room:', currentRoomId);
         }
     });

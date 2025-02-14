@@ -112,7 +112,7 @@ export const DrawingCanvas = () => {
     
 
     const handleStartDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!ctxRef.current || !socket || !canvasRef.current) return;
+        if (!ctxRef.current || !socket) return;
 
         const ctx = ctxRef.current;
         // const canvas = canvasRef.current;
@@ -162,7 +162,7 @@ export const DrawingCanvas = () => {
                 erase: mode === "erase",
             })
         );
-    }, [isDrawing, socket, mode, color, size]);
+    }, [isDrawing, socket, mode, color]);
 
     const handleEndDrawing = useCallback(() => {
         if (!ctxRef.current || !socket) return;
@@ -251,7 +251,6 @@ export const DrawingCanvas = () => {
                 onDownload={handleDownload}
             />
             <canvas
-                className="canvas-container"
                 ref={canvasRef}
                 onMouseDown={handleStartDrawing}
                 onMouseMove={handleDraw}
