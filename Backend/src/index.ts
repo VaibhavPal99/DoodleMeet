@@ -1,4 +1,5 @@
 import { WebSocket as WS, WebSocketServer } from 'ws';
+import http, { IncomingMessage, ServerResponse } from "http";
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Room } from './types/types';
 
@@ -6,9 +7,14 @@ import { Message, Room } from './types/types';
 const rooms: Room = {};
 
 
+const server = http.createServer((req : IncomingMessage, res : ServerResponse) => {
+    if (req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("OK");
+    }
+  });
 
-
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws: WS) => {
     console.log('Client connected');
@@ -176,4 +182,9 @@ const broadcast = (roomId : string, message : Message) => {
     }
 };
 
-console.log('WebSocket server is running on ws://localhost:8080');
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+console.log(`WebSocket server running at ws://localhost:${PORT}`);
