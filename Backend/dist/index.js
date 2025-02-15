@@ -8,21 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = require("ws");
 const uuid_1 = require("uuid");
-const ioredis_1 = __importDefault(require("ioredis"));
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
 const rooms = {};
-// const redisUrl = process.env.REDIS_URL as string;
-// const redis = new Redis(redisUrl, {
-//     tls: { rejectUnauthorized: false } // Required for Render's Redis
-// });
-const redis = new ioredis_1.default("rediss://red-cumvljlsvqrc73fm1mt0:PPzm8DOtNH71EbcwkfAqKSw7tozc9XW7@oregon-redis.render.com:6379");
 const wss = new ws_1.WebSocketServer({ port: 8080 });
 wss.on('connection', (ws) => {
     console.log('Client connected');
@@ -48,14 +37,6 @@ wss.on('connection', (ws) => {
                 console.log(rooms);
                 // Send a confirmation to the user that they joined the room
                 ws.send(JSON.stringify({ type: 'roomJoined', roomId }));
-                const savedCanvasState = yield redis.lrange(`canvas:${roomId}`, 0, -1);
-                if (savedCanvasState) {
-                    ws.send(JSON.stringify({ type: 'canvasState', state: savedCanvasState.map((item) => JSON.parse(item)) }));
-                }
-                const chatHistory = yield redis.lrange(`chat:${roomId}`, 0, -1);
-                if (chatHistory.length > 0) {
-                    ws.send(JSON.stringify({ type: 'chatHistory', messages: chatHistory.map((msg) => JSON.parse(msg)) }));
-                }
                 broadcast(roomId, { type: 'userJoined', roomId });
                 console.log(`User joined room: ${roomId}`);
             }
@@ -87,38 +68,16 @@ wss.on('connection', (ws) => {
                     content: data.content,
                     timestamp: new Date().toISOString()
                 };
-                // Save the message in Redis (optional, for history retrieval)
-                yield redis.rpush(`chat:${roomId}`, JSON.stringify(chatMessage));
-                // Broadcast the message to all users in the room
                 broadcast(roomId, chatMessage);
+                // Broadcast the message to all users in the room
                 console.log(`Message sent in room ${roomId}: ${data.content}`);
             }
         }
-        if (data.type === 'start') {
+        if (data.type === "stroke") {
             const roomId = currentRoomId;
             if (roomId && rooms[roomId]) {
-                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
+                console.log(`Broadcasting stroke in room: ${roomId}`);
                 broadcast(roomId, data);
-                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
-                // Send drawing data to everyone in the room
-            }
-        }
-        if (data.type === 'draw') {
-            const roomId = currentRoomId;
-            if (roomId && rooms[roomId]) {
-                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
-                broadcast(roomId, data);
-                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
-                // Send drawing data to everyone in the room
-            }
-        }
-        if (data.type === 'end') {
-            const roomId = currentRoomId;
-            if (roomId && rooms[roomId]) {
-                console.log(`Broadcasting: ${data.type}, Erase: ${data.erase}`);
-                broadcast(roomId, data);
-                yield redis.rpush(`canvas:${roomId}`, JSON.stringify(data));
-                // Send drawing data to everyone in the room
             }
         }
         if (data.type === 'cursor') {
@@ -157,8 +116,6 @@ wss.on('connection', (ws) => {
             broadcast(currentRoomId, { type: 'userLeft' });
             if (rooms[currentRoomId].length === 0) {
                 delete rooms[currentRoomId];
-                redis.del(`canvas:${currentRoomId}`); // Delete canvas state when room is empty
-                redis.del(`chat:${currentRoomId}`);
                 console.log(`Room ${currentRoomId} deleted.`);
             }
             // Notify other users in the room that someone has left

@@ -15,6 +15,9 @@ export const DrawingCanvas = () => {
     const [mode, setMode] = useState<"draw" | "erase">("draw");
     const [color, setColor] = useState("black");
     const roomId = useRecoilValue(roomIdAtom) || localStorage.getItem("roomId");
+
+    const [currentStroke,setCurrentStroke] = useState<{ x: number; y: number }[]>([]);
+
   
     
     const navigate = useNavigate();
@@ -48,98 +51,65 @@ export const DrawingCanvas = () => {
                 }
 
                 const data = JSON.parse(textData);
-                if (data.type === "canvasState") {
-                    restoreCanvas(data.state);  // Restore the saved canvas state
-                } else {
-                    updateCanvas(data);
+            
+                if (data.type === "stroke") {
+                    updateCanvas(data.stroke); // Update canvas with received stroke
                 }
+
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
             }
         };
     }, [socket]);
 
-    const updateCanvas = (data: any) => {
+    const updateCanvas = (stroke: any) => {
         const ctx = ctxRef.current;
         if (!ctx) return;
 
-        ctx.globalCompositeOperation = data.erase ? "destination-out" : "source-over";
-        ctx.strokeStyle = data.color;
-        ctx.lineWidth = data.lineWidth;
+        ctx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.lineWidth;
 
-        switch (data.type) {
-            case "start":
-                ctx.beginPath();
-                ctx.moveTo(data.x, data.y);
-                break;
-            case "draw":
-                ctx.lineTo(data.x, data.y);
-                ctx.stroke();
-                break;
-            case "end":
-                ctx.closePath();
-                break;
-            default:
-                break;
+       ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+
+        for (let i = 1; i < stroke.points.length; i++) {
+            ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+            ctx.stroke();
         }
+
+        ctx.closePath();
     };
 
-    const restoreCanvas = (savedState: any) => {
-        const ctx = ctxRef.current;
-        if (!ctx || !savedState) return;
-    
-        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height); // Clear canvas
-    
-        savedState.forEach((stroke: any) => {
-            if (stroke.type === "start") {
-                ctx.beginPath();
-                ctx.moveTo(stroke.x, stroke.y);
-            } else if (stroke.type === "draw") {
-                ctx.lineTo(stroke.x, stroke.y);
-                ctx.stroke();
-            } else if (stroke.type === "end") {
-                ctx.closePath();
-            }
-    
-            ctx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
-            ctx.strokeStyle = stroke.color;
-            ctx.lineWidth = stroke.lineWidth;
-        });
-    
-        console.log("Canvas restored from Redis!");
-    };
-    
-    
 
     const handleStartDrawing = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!ctxRef.current || !socket) return;
 
         const ctx = ctxRef.current;
-        // const canvas = canvasRef.current;
-
-        // history.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-        // redoStack.current = [];
-
+       
         setIsDrawing(true);
+        setCurrentStroke([]);       //Reset Stroke
 
         const { offsetX, offsetY } = event.nativeEvent;
         ctx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-        // ctx.strokeStyle = mode === "erase" ? "white" : color;
+        
         ctx.lineWidth = size;
         ctx.beginPath();
         ctx.moveTo(offsetX, offsetY);
 
-        socket.send(
-            JSON.stringify({
-                type: "start",
-                x: offsetX,
-                y: offsetY,
-                color: ctx.strokeStyle,
-                lineWidth: ctx.lineWidth,
-                erase: mode === "erase",
-            })
-        );
-    }, [socket, mode, color, size]);
+        // socket.send(
+        //     JSON.stringify({
+        //         type: "start",
+        //         x: offsetX,
+        //         y: offsetY,
+        //         color: ctx.strokeStyle,
+        //         lineWidth: ctx.lineWidth,
+        //         erase: mode === "erase",
+        //     })
+        // );
+        setCurrentStroke([{ x: offsetX, y: offsetY }]);
+
+    }, [socket, mode, size]);
 
     const handleDraw = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing || !ctxRef.current || !socket) return;
@@ -147,33 +117,45 @@ export const DrawingCanvas = () => {
         const { offsetX, offsetY } = event.nativeEvent;
 
         ctxRef.current.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
-        // ctxRef.current.strokeStyle = mode === "erase" ? "white" : color;
-        // ctxRef.current.lineWidth = size;
+        
         ctxRef.current.lineTo(offsetX, offsetY);
         ctxRef.current.stroke();
 
-        socket.send(
-            JSON.stringify({
-                type: "draw",
-                x: offsetX,
-                y: offsetY,
-                color: ctxRef.current.strokeStyle,
-                lineWidth: ctxRef.current.lineWidth,
-                erase: mode === "erase",
-            })
-        );
-    }, [isDrawing, socket, mode, color]);
+        // socket.send(
+        //     JSON.stringify({
+        //         type: "draw",
+        //         x: offsetX,
+        //         y: offsetY,
+        //         color: ctxRef.current.strokeStyle,
+        //         lineWidth: ctxRef.current.lineWidth,
+        //         erase: mode === "erase",
+        //     })
+        // );
+
+        setCurrentStroke(prev => [...prev, { x: offsetX, y: offsetY }]);
+
+    }, [isDrawing, socket]);
 
     const handleEndDrawing = useCallback(() => {
         if (!ctxRef.current || !socket) return;
         setIsDrawing(false);
 
-        socket.send(
-            JSON.stringify({
-                type: "end",
-            })
-        );
-    }, [socket]);
+        if (currentStroke.length > 1) {
+            socket.send(JSON.stringify({
+                type: "stroke",
+                stroke: {
+                    points: currentStroke,
+                    color,
+                    lineWidth: size,
+                    erase: mode === "erase"
+                }
+            }));
+        }
+
+        setCurrentStroke([]); // Clear stroke
+
+
+    }, [socket, currentStroke, color, size, mode]);
 
     const setToDraw = useCallback(() => {
         setMode("draw");
