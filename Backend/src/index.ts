@@ -182,9 +182,12 @@ const broadcast = (roomId : string, message : Message) => {
     }
 };
 
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
+const PORT = 8080;
+server.listen(PORT,'0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-console.log(`WebSocket server running at ws://localhost:${PORT}`);
+setInterval(() => {
+    console.log("Heartbeat: WebSocket server is running...");
+}, 30000);
+  
