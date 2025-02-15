@@ -8,11 +8,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = require("ws");
+const http_1 = __importDefault(require("http"));
 const uuid_1 = require("uuid");
 const rooms = {};
-const wss = new ws_1.WebSocketServer({ port: 8080 });
+const server = http_1.default.createServer((req, res) => {
+    if (req.url === "/") {
+        res.writeHead(200, { "Content-Type": "text/plain" });
+        res.end("OK");
+    }
+});
+const wss = new ws_1.WebSocketServer({ server });
 wss.on('connection', (ws) => {
     console.log('Client connected');
     let currentRoomId = null;
@@ -130,4 +140,10 @@ const broadcast = (roomId, message) => {
         });
     }
 };
-console.log('WebSocket server is running on ws://localhost:8080');
+const PORT = Number(process.env.PORT) || 8080;
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});
+setInterval(() => {
+    console.log("Heartbeat: WebSocket server is running...");
+}, 30000);

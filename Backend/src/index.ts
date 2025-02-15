@@ -8,7 +8,7 @@ const rooms: Room = {};
 
 
 const server = http.createServer((req : IncomingMessage, res : ServerResponse) => {
-    if (req.url === "/health") {
+    if (req.url === "/") {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("OK");
     }
@@ -182,7 +182,7 @@ const broadcast = (roomId : string, message : Message) => {
     }
 };
 
-const PORT = 8080;
+const PORT = Number(process.env.PORT) || 8080;
 server.listen(PORT,'0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
