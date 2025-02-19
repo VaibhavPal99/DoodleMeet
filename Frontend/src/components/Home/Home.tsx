@@ -12,6 +12,8 @@ export const Home = () => {
     const [userName, setUserName] = useRecoilState(usernameAtom);
     const setRoomIdAtom = useSetRecoilState(roomIdAtom);
     const navigate = useNavigate();
+    const[creating, setCreating] = useState<boolean>(false);
+    const[joining, setJoining] = useState<boolean>(false);
 
     useEffect(() => {
         if (!socket) return;
@@ -32,6 +34,7 @@ export const Home = () => {
                     setRoomId(data.roomId);
                     setRoomIdAtom(data.roomId);
                     localStorage.setItem("roomId", data.roomId);
+                    setCreating(false);
                     navigate(`/room/${data.roomId}`);
                 }
             } catch (error) {
@@ -46,6 +49,7 @@ export const Home = () => {
 
     const handleCreateRoom = () => {
         if (!socket) return;
+        setCreating(true);
         socket.send(JSON.stringify({ type: "createRoom" }));
     };
 
@@ -54,6 +58,7 @@ export const Home = () => {
             console.log("No socket connection or no roomId");
             return;
         }
+        setJoining(true);
         localStorage.setItem("roomId", roomId);
         setRoomIdAtom(roomId);
         socket.send(JSON.stringify({ type: "joinRoom", roomId }));
@@ -76,6 +81,7 @@ export const Home = () => {
                 }
 
                 if (data.type === "roomJoined") {
+                    setJoining(false);
                     navigate(`/room/${roomId}`);
                 }
             } catch (error) {
@@ -104,7 +110,7 @@ export const Home = () => {
             </div>
 
             <button className="create-btn" onClick={handleCreateRoom} disabled={!userName.trim()}>
-                ✨ Create New Room
+                {creating ? "Creating..." : "✨ Create New Room"}
             </button>
 
             <div className="input-group">
@@ -117,9 +123,10 @@ export const Home = () => {
                     placeholder="Enter Room ID"
                 />
             </div>
+            
 
             <button className="join-btn" onClick={handleJoinRoom} disabled={!userName.trim() || !roomId.trim()}>
-                🚀 Join Room
+                {joining ? "Joining..." : "🚀 Join Room"}
             </button>
         </div>
     );
